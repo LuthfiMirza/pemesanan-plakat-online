@@ -158,11 +158,10 @@ class TransactionResource extends Resource
 
                         Forms\Components\Select::make('status_pembayaran')
                             ->options([
-                                'pending' => 'Pending',
                                 'menunggu_pembayaran' => 'Menunggu Pembayaran',
                                 'menunggu_verifikasi' => 'Menunggu Verifikasi',
-                                'confirmed' => 'Dikonfirmasi',
-                                'rejected' => 'Ditolak'
+                                'dibayar' => 'Dibayar',
+                                'ditolak' => 'Ditolak'
                             ])
                             ->required()
                             ->label('Status Pembayaran')
@@ -240,6 +239,7 @@ class TransactionResource extends Resource
                         'menunggu_verifikasi' => 'info',
                         'dibayar' => 'success',
                         'ditolak' => 'danger',
+                        default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -250,11 +250,10 @@ class TransactionResource extends Resource
                 SelectFilter::make('status_pembayaran')
                     ->label('Status Pembayaran')
                     ->options([
-                        'pending' => 'Pending',
                         'menunggu_pembayaran' => 'Menunggu Pembayaran',
                         'menunggu_verifikasi' => 'Menunggu Verifikasi',
-                        'confirmed' => 'Dikonfirmasi',
-                        'rejected' => 'Ditolak',
+                        'dibayar' => 'Dibayar',
+                        'ditolak' => 'Ditolak',
                     ])
                     ->native(false),
 
@@ -375,22 +374,4 @@ class TransactionResource extends Resource
         return 'primary';
     }
 
-    public static function getTabs(): array
-    {
-        return [
-            'all' => Tab::make('Semua Transaksi')
-                ->badge(Transaction::count())
-                ->badgeColor('primary'),
-                
-            'menunggu_pembayaran' => Tab::make('Menunggu Pembayaran')
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('status_pembayaran', 'menunggu_pembayaran'))
-                ->badge(Transaction::where('status_pembayaran', 'menunggu_pembayaran')->count())
-                ->badgeColor('warning'),
-                
-            'dibayar' => Tab::make('Dibayar')
-                ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status_pembayaran', ['confirmed', 'menunggu_verifikasi']))
-                ->badge(Transaction::whereIn('status_pembayaran', ['confirmed', 'menunggu_verifikasi'])->count())
-                ->badgeColor('success'),
-        ];
     }
-}
