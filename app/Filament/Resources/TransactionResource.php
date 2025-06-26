@@ -9,114 +9,171 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\TernaryFilter;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Actions\BulkAction;
+use Illuminate\Database\Eloquent\Collection;
+use Filament\Notifications\Notification;
+use Filament\Support\Enums\MaxWidth;
+use Filament\Tables\Actions\Action;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Select;
+use Filament\Support\Colors\Color;
+use Filament\Resources\Components\Tab;
 
 class TransactionResource extends Resource
 {
     protected static ?string $model = Transaction::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
+    
+    protected static ?string $navigationLabel = 'Kelola Transaksi';
+    
+    protected static ?string $modelLabel = 'Transaksi';
+    
+    protected static ?string $pluralModelLabel = 'Transaksi';
+
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('plakat_id')
-                    ->relationship('plakat', 'nama')
-                    ->preload()
-                    ->required()
-                    ->label('Nama Plakat')
-                    ->searchable()
-                    ->disabled(),
-                Forms\Components\TextInput::make('plakat.deskripsi')
-                    ->label('Deskripsi Produk')
-                    ->disabled()
-                    ->dehydrated(false),
-                Forms\Components\TextInput::make('plakat.harga')
-                    ->label('Harga Produk')
-                    ->prefix('Rp')
-                    ->disabled()
-                    ->dehydrated(false),
-                Forms\Components\TextInput::make('plakat.kategori')
-                    ->label('Kategori')
-                    ->disabled()
-                    ->dehydrated(false),
-                Forms\Components\TextInput::make('nama_pembeli')
-                    ->required()
-                    ->maxLength(255)
-                    ->label('Nama Pembeli')
-                    ->disabled(),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->maxLength(255)
-                    ->disabled(),
-                Forms\Components\TextInput::make('no_telepon')
-                    ->tel()
-                    ->required()
-                    ->maxLength(255)
-                    ->label('No. Telepon')
-                    ->disabled(),
-                Forms\Components\Textarea::make('alamat')
-                    ->required()
-                    ->columnSpanFull()
-                    ->disabled(),
-                Forms\Components\FileUpload::make('design_file')
-                    ->image()
-                    ->directory('design-files')
-                    ->disk('public')
-                    ->label('Design File')
-                    ->columnSpanFull()
-                    ->disabled(),
-                Forms\Components\Textarea::make('catatan_design')
-                    ->label('Catatan Design')
-                    ->columnSpanFull()
-                    ->disabled(),
-                Forms\Components\TextInput::make('total_harga')
-                    ->required()
-                    ->numeric()
-                    ->prefix('Rp')
-                    ->label('Total Harga')
-                    ->disabled(),
-                Forms\Components\Select::make('metode_pembayaran')
-                    ->options([
-                        'transfer_bank' => 'Transfer Bank',
-                        'e_wallet' => 'E-Wallet'
+                Forms\Components\Section::make('Informasi Produk')
+                    ->schema([
+                        Forms\Components\TextInput::make('invoice_number')
+                            ->label('Nomor Invoice')
+                            ->disabled()
+                            ->dehydrated(false),
+
+                        Forms\Components\Select::make('plakat_id')
+                            ->relationship('plakat', 'nama')
+                            ->preload()
+                            ->required()
+                            ->label('Produk Plakat')
+                            ->searchable()
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('total_harga')
+                            ->required()
+                            ->numeric()
+                            ->prefix('Rp')
+                            ->label('Total Harga')
+                            ->disabled(),
                     ])
-                    ->required()
-                    ->disabled(),
-                Forms\Components\Select::make('bank')
-                    ->options([
-                        'bca' => 'BCA',
-                        'bni' => 'BNI',
-                        'mandiri' => 'Mandiri'
+                    ->columns(3),
+
+                Forms\Components\Section::make('Informasi Pembeli')
+                    ->schema([
+                        Forms\Components\TextInput::make('nama_pembeli')
+                            ->required()
+                            ->maxLength(255)
+                            ->label('Nama Lengkap')
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('email')
+                            ->email()
+                            ->required()
+                            ->maxLength(255)
+                            ->label('Email')
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('no_telepon')
+                            ->tel()
+                            ->required()
+                            ->maxLength(255)
+                            ->label('No. Telepon')
+                            ->disabled(),
+
+                        Forms\Components\Textarea::make('alamat')
+                            ->required()
+                            ->label('Alamat Lengkap')
+                            ->columnSpanFull()
+                            ->disabled(),
                     ])
-                    ->visible(fn (callable $get) => $get('metode_pembayaran') === 'transfer_bank')
-                    ->disabled(),
-                Forms\Components\Select::make('ewallet')
-                    ->options([
-                        'dana' => 'DANA',
-                        'ovo' => 'OVO',
-                        'gopay' => 'GoPay'
+                    ->columns(2),
+
+                Forms\Components\Section::make('Informasi Design')
+                    ->schema([
+                        Forms\Components\FileUpload::make('design_file')
+                            ->image()
+                            ->directory('design-files')
+                            ->disk('public')
+                            ->label('File Design')
+                            ->downloadable()
+                            ->openable()
+                            ->disabled(),
+
+                        Forms\Components\Textarea::make('catatan_design')
+                            ->label('Catatan Design')
+                            ->disabled(),
                     ])
-                    ->visible(fn (callable $get) => $get('metode_pembayaran') === 'e_wallet')
-                    ->disabled(),
-                Forms\Components\FileUpload::make('bukti_pembayaran')
-                    ->image()
-                    ->directory('bukti-pembayaran')
-                    ->disk('public')
-                    ->label('Bukti Pembayaran')
-                    ->columnSpanFull()
-                    ->disabled(),
-                Forms\Components\Select::make('status_pembayaran')
-                    ->options([
-                        'menunggu_pembayaran' => 'Menunggu Pembayaran',
-                        'menunggu_verifikasi' => 'Menunggu Verifikasi',
-                        'dibayar' => 'Dibayar',
-                        'ditolak' => 'Ditolak'
+                    ->columns(2),
+
+                Forms\Components\Section::make('Informasi Pembayaran')
+                    ->schema([
+                        Forms\Components\Select::make('metode_pembayaran')
+                            ->options([
+                                'transfer_bank' => 'Transfer Bank',
+                                'e_wallet' => 'E-Wallet',
+                                'cod' => 'Cash on Delivery'
+                            ])
+                            ->required()
+                            ->label('Metode Pembayaran')
+                            ->disabled(),
+
+                        Forms\Components\Select::make('bank')
+                            ->options([
+                                'BCA' => 'BCA',
+                                'BNI' => 'BNI',
+                                'BRI' => 'BRI',
+                                'Mandiri' => 'Mandiri',
+                                'CIMB' => 'CIMB'
+                            ])
+                            ->visible(fn (callable $get) => $get('metode_pembayaran') === 'transfer_bank')
+                            ->label('Bank')
+                            ->disabled(),
+
+                        Forms\Components\Select::make('ewallet')
+                            ->options([
+                                'DANA' => 'DANA',
+                                'OVO' => 'OVO',
+                                'GoPay' => 'GoPay',
+                                'ShopeePay' => 'ShopeePay'
+                            ])
+                            ->visible(fn (callable $get) => $get('metode_pembayaran') === 'e_wallet')
+                            ->label('E-Wallet')
+                            ->disabled(),
+
+                        Forms\Components\FileUpload::make('bukti_pembayaran')
+                            ->image()
+                            ->directory('bukti-pembayaran')
+                            ->disk('public')
+                            ->label('Bukti Pembayaran')
+                            ->downloadable()
+                            ->openable()
+                            ->disabled(),
+
+                        Forms\Components\Select::make('status_pembayaran')
+                            ->options([
+                                'pending' => 'Pending',
+                                'menunggu_pembayaran' => 'Menunggu Pembayaran',
+                                'menunggu_verifikasi' => 'Menunggu Verifikasi',
+                                'confirmed' => 'Dikonfirmasi',
+                                'rejected' => 'Ditolak'
+                            ])
+                            ->required()
+                            ->label('Status Pembayaran')
+                            ->native(false),
+
+                        Forms\Components\Textarea::make('admin_notes')
+                            ->label('Catatan Admin')
+                            ->placeholder('Tambahkan catatan untuk transaksi ini...')
+                            ->columnSpanFull(),
                     ])
-                    ->required()
-                    ->default('menunggu_pembayaran')
-                    ->label('Status Pembayaran'),
+                    ->columns(2),
             ]);
     }
 
@@ -190,7 +247,90 @@ class TransactionResource extends Resource
                     ->label('Tanggal Pemesanan'),
             ])
             ->filters([
-                //
+                SelectFilter::make('status_pembayaran')
+                    ->label('Status Pembayaran')
+                    ->options([
+                        'pending' => 'Pending',
+                        'menunggu_pembayaran' => 'Menunggu Pembayaran',
+                        'menunggu_verifikasi' => 'Menunggu Verifikasi',
+                        'confirmed' => 'Dikonfirmasi',
+                        'rejected' => 'Ditolak',
+                    ])
+                    ->native(false),
+
+                SelectFilter::make('metode_pembayaran')
+                    ->label('Metode Pembayaran')
+                    ->options([
+                        'transfer_bank' => 'Transfer Bank',
+                        'e_wallet' => 'E-Wallet',
+                        'cod' => 'Cash on Delivery',
+                    ])
+                    ->native(false),
+
+                SelectFilter::make('plakat_id')
+                    ->label('Produk Plakat')
+                    ->relationship('plakat', 'nama')
+                    ->searchable()
+                    ->preload()
+                    ->native(false),
+
+                Filter::make('total_harga')
+                    ->form([
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('harga_dari')
+                                    ->label('Harga Dari')
+                                    ->numeric()
+                                    ->prefix('Rp'),
+                                Forms\Components\TextInput::make('harga_sampai')
+                                    ->label('Harga Sampai')
+                                    ->numeric()
+                                    ->prefix('Rp'),
+                            ]),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['harga_dari'],
+                                fn (Builder $query, $price): Builder => $query->where('total_harga', '>=', $price),
+                            )
+                            ->when(
+                                $data['harga_sampai'],
+                                fn (Builder $query, $price): Builder => $query->where('total_harga', '<=', $price),
+                            );
+                    })
+                    ->label('Filter Harga'),
+
+                Filter::make('created_at')
+                    ->form([
+                        Forms\Components\DatePicker::make('created_from')
+                            ->label('Dari Tanggal'),
+                        Forms\Components\DatePicker::make('created_until')
+                            ->label('Sampai Tanggal'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['created_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['created_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                            );
+                    })
+                    ->label('Filter Tanggal'),
+
+                TernaryFilter::make('bukti_pembayaran')
+                    ->label('Bukti Pembayaran')
+                    ->placeholder('Semua Transaksi')
+                    ->trueLabel('Ada Bukti Pembayaran')
+                    ->falseLabel('Belum Ada Bukti')
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereNotNull('bukti_pembayaran'),
+                        false: fn (Builder $query) => $query->whereNull('bukti_pembayaran'),
+                    )
+                    ->native(false),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -216,6 +356,41 @@ class TransactionResource extends Resource
             'index' => Pages\ListTransactions::route('/'),
             'create' => Pages\CreateTransaction::route('/create'),
             'edit' => Pages\EditTransaction::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        $pendingCount = static::getModel()::where('status_pembayaran', 'menunggu_verifikasi')->count();
+        
+        if ($pendingCount > 0) {
+            return 'warning';
+        }
+        
+        return 'primary';
+    }
+
+    public static function getTabs(): array
+    {
+        return [
+            'all' => Tab::make('Semua Transaksi')
+                ->badge(Transaction::count())
+                ->badgeColor('primary'),
+                
+            'menunggu_pembayaran' => Tab::make('Menunggu Pembayaran')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status_pembayaran', 'menunggu_pembayaran'))
+                ->badge(Transaction::where('status_pembayaran', 'menunggu_pembayaran')->count())
+                ->badgeColor('warning'),
+                
+            'dibayar' => Tab::make('Dibayar')
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status_pembayaran', ['confirmed', 'menunggu_verifikasi']))
+                ->badge(Transaction::whereIn('status_pembayaran', ['confirmed', 'menunggu_verifikasi'])->count())
+                ->badgeColor('success'),
         ];
     }
 }
