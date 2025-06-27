@@ -347,13 +347,12 @@
                                 @csrf
                                 <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
                                     <div class="card-body p-4">
-                                        <div class="upload-area border-2 border-dashed rounded-4 p-5 text-center" style="border-color: #dee2e6 !important; background-color: #ffffff; transition: all 0.3s ease;">
+                                        <div class="upload-area border-2 border-dashed rounded-4 p-5 text-center" style="border-color: #dee2e6 !important; background-color: #ffffff;">
                                             <i class="fas fa-cloud-upload-alt fa-4x text-muted mb-4"></i>
                                             <h6 class="fw-bold mb-3">Pilih File Bukti Pembayaran</h6>
-                                            <input type="file" class="form-control d-none" id="bukti_pembayaran" name="bukti_pembayaran" accept="image/*" required>
-                                            <label for="bukti_pembayaran" class="btn btn-outline-primary btn-lg mb-3 cursor-pointer">
-                                                <i class="fas fa-upload me-2"></i>Pilih File
-                                            </label>
+                                            <div class="mb-3">
+                                                <input type="file" class="form-control form-control-lg" id="bukti_pembayaran" name="bukti_pembayaran" accept="image/jpeg,image/png,image/jpg" required>
+                                            </div>
                                             <div class="text-muted">
                                                 <small>Format: JPG, PNG, JPEG | Maksimal: 2MB</small>
                                             </div>
@@ -445,49 +444,71 @@
     </style>
 
     <script>
-        // File upload preview
-        document.getElementById('bukti_pembayaran').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            const uploadArea = document.querySelector('.upload-area');
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('bukti_pembayaran');
             
-            if (file) {
-                const fileName = file.name;
-                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            // File validation
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
                 
-                uploadArea.innerHTML = `
-                    <i class="fas fa-file-image fa-4x text-success mb-4"></i>
-                    <h6 class="fw-bold mb-2 text-success">File Terpilih</h6>
-                    <p class="mb-2"><strong>${fileName}</strong></p>
-                    <p class="text-muted mb-3">Ukuran: ${fileSize} MB</p>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetUpload()">
-                        <i class="fas fa-times me-1"></i>Ganti File
-                    </button>
-                `;
-                uploadArea.style.borderColor = '#28a745';
-                uploadArea.style.backgroundColor = '#f8fff8';
-            }
+                if (file) {
+                    // Validate file type
+                    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+                    if (!allowedTypes.includes(file.type)) {
+                        alert('Format file tidak didukung. Gunakan JPG, PNG, atau JPEG.');
+                        fileInput.value = '';
+                        return;
+                    }
+                    
+                    // Validate file size (2MB)
+                    if (file.size > 2 * 1024 * 1024) {
+                        alert('Ukuran file terlalu besar. Maksimal 2MB.');
+                        fileInput.value = '';
+                        return;
+                    }
+                    
+                    console.log('File selected:', file.name, file.size, file.type);
+                }
+            });
         });
-
-        function resetUpload() {
-            document.getElementById('bukti_pembayaran').value = '';
-            const uploadArea = document.querySelector('.upload-area');
-            uploadArea.innerHTML = `
-                <i class="fas fa-cloud-upload-alt fa-4x text-muted mb-4"></i>
-                <h6 class="fw-bold mb-3">Pilih File Bukti Pembayaran</h6>
-                <input type="file" class="form-control d-none" id="bukti_pembayaran" name="bukti_pembayaran" accept="image/*" required>
-                <label for="bukti_pembayaran" class="btn btn-outline-primary btn-lg mb-3 cursor-pointer">
-                    <i class="fas fa-upload me-2"></i>Pilih File
-                </label>
-                <div class="text-muted">
-                    <small>Format: JPG, PNG, JPEG | Maksimal: 2MB</small>
-                </div>
-            `;
-            uploadArea.style.borderColor = '#dee2e6';
-            uploadArea.style.backgroundColor = '#ffffff';
+        
+        // Form validation before submit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const fileInput = document.getElementById('bukti_pembayaran');
             
-            // Re-attach event listener
-            document.getElementById('bukti_pembayaran').addEventListener('change', arguments.callee.caller);
-        }
+            console.log('Form submitted');
+            console.log('File input:', fileInput);
+            console.log('Files:', fileInput.files);
+            console.log('Files length:', fileInput.files ? fileInput.files.length : 0);
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                e.preventDefault();
+                alert('Silakan pilih file bukti pembayaran terlebih dahulu.');
+                return false;
+            }
+            
+            const file = fileInput.files[0];
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            
+            if (!allowedTypes.includes(file.type)) {
+                e.preventDefault();
+                alert('Format file tidak didukung. Gunakan JPG, PNG, atau JPEG.');
+                return false;
+            }
+            
+            if (file.size > 2 * 1024 * 1024) {
+                e.preventDefault();
+                alert('Ukuran file terlalu besar. Maksimal 2MB.');
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = document.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Mengupload...';
+            submitBtn.disabled = true;
+            
+            console.log('Form validation passed, submitting...');
+        });
     </script>
 </body>
 </html>

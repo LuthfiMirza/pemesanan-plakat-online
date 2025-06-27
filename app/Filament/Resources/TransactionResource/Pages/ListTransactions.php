@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Builder;
 class ListTransactions extends ListRecords
 {
     protected static string $resource = TransactionResource::class;
+    
+    protected string $pollingInterval = '5s';
 
     protected function getHeaderActions(): array
     {
@@ -22,22 +24,33 @@ class ListTransactions extends ListRecords
 
     public function getTabs(): array
     {
+        // Cache counts for better performance during polling
+        $allCount = Transaction::count();
+        $menungguCount = Transaction::where('status_pembayaran', 'menunggu_pembayaran')->count();
+        $dibayarCount = Transaction::whereIn('status_pembayaran', ['dibayar', 'menunggu_verifikasi'])->count();
+        
         return [
             'all' => Tab::make('Semua Transaksi')
-                ->badge(Transaction::count())
-                ->badgeColor('primary'),
+                ->badge($allCount)
+                ->badgeColor('primary')
+                ->icon('heroicon-o-list-bullet'),
                 
             'menunggu_pembayaran' => Tab::make('Menunggu Pembayaran')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status_pembayaran', 'menunggu_pembayaran'))
-                ->badge(Transaction::where('status_pembayaran', 'menunggu_pembayaran')->count())
-                ->badgeColor('warning')
+                ->badge($menungguCount)
+                ->badgeColor($menungguCount > 0 ? 'warning' : 'gray')
                 ->icon('heroicon-o-clock'),
                 
             'dibayar' => Tab::make('Dibayar')
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status_pembayaran', ['dibayar', 'menunggu_verifikasi']))
-                ->badge(Transaction::whereIn('status_pembayaran', ['dibayar', 'menunggu_verifikasi'])->count())
-                ->badgeColor('success')
+                ->badge($dibayarCount)
+                ->badgeColor($dibayarCount > 0 ? 'success' : 'gray')
                 ->icon('heroicon-o-check-circle'),
         ];
+    }
+    
+    protected function getTablePollingInterval(): ?string
+    {
+        return '5s';
     }
 }

@@ -4,6 +4,7 @@ Sistem pemesanan plakat online yang dibangun dengan Laravel 11 dan Filament 3. A
 
 ## 📋 Daftar Isi
 
+- [Update Terbaru](#-update-terbaru)
 - [Fitur Utama](#-fitur-utama)
 - [Teknologi yang Digunakan](#-teknologi-yang-digunakan)
 - [Persyaratan Sistem](#-persyaratan-sistem)
@@ -17,6 +18,39 @@ Sistem pemesanan plakat online yang dibangun dengan Laravel 11 dan Filament 3. A
 - [Kontribusi](#-kontribusi)
 - [Lisensi](#-lisensi)
 
+## 🆕 Update Terbaru
+
+### Version 2.1.0 - Enhanced Admin Experience & Real-time Features
+
+#### 🚀 Fitur Baru Admin Panel
+- **Real-time Transaction Monitoring**: Auto-refresh setiap 5 detik untuk monitoring pesanan real-time
+- **Enhanced Payment Verification**: Modal interaktif untuk approve/reject pembayaran dengan alasan
+- **Payment Proof Viewer**: Modal khusus untuk melihat bukti pembayaran dalam ukuran penuh
+- **Smart Navigation Badges**: Badge notifikasi dengan tooltip informatif untuk pesanan pending
+- **Admin Notes System**: Sistem catatan otomatis untuk tracking semua aksi admin
+- **Improved Tab System**: Tab dengan badge dinamis dan ikon yang informatif
+
+#### 💡 Peningkatan User Experience
+- **Auto-refresh Payment Status**: Halaman sukses pembayaran auto-refresh setiap 10 detik
+- **Enhanced File Upload**: Validasi file yang lebih ketat dengan feedback yang jelas
+- **Real-time Status Updates**: Status pesanan diperbarui secara real-time
+- **Better Error Handling**: Pesan error yang lebih informatif dan user-friendly
+- **Improved UI/UX**: Interface yang lebih modern dan responsif
+
+#### 🔧 Technical Improvements
+- **API Endpoint**: `/api/payment/status/{id}` untuk checking status pembayaran
+- **Enhanced Logging**: Logging yang lebih detail untuk debugging
+- **Better File Validation**: Validasi file upload yang lebih robust
+- **Performance Optimization**: Caching untuk badge counts dan polling optimization
+- **Security Enhancements**: Validasi yang lebih ketat untuk file upload
+
+#### 🎨 UI/UX Enhancements
+- **Modern Modal Design**: Modal dengan design yang lebih modern dan user-friendly
+- **Loading States**: Loading indicators untuk semua aksi async
+- **Toast Notifications**: Notifikasi yang lebih elegant dengan Filament notifications
+- **Responsive Design**: Optimasi untuk semua ukuran layar
+- **Icon Improvements**: Penggunaan ikon yang lebih konsisten dan informatif
+
 ## 🚀 Fitur Utama
 
 ### 👥 Untuk Pelanggan
@@ -24,9 +58,12 @@ Sistem pemesanan plakat online yang dibangun dengan Laravel 11 dan Filament 3. A
 - **Pemesanan Online**: Proses pemesanan yang mudah dan intuitif
 - **Upload Design**: Upload file design custom untuk plakat
 - **Multiple Payment**: Mendukung transfer bank, e-wallet, dan COD
-- **Upload Bukti Pembayaran**: Upload bukti transfer untuk verifikasi
+- **Upload Bukti Pembayaran**: Upload bukti transfer untuk verifikasi dengan validasi
+- **Real-time Status Updates**: Status pesanan diperbarui otomatis setiap 10 detik
+- **Auto-refresh Payment Status**: Halaman sukses pembayaran auto-refresh untuk status terbaru
+- **Enhanced File Upload**: Validasi file yang lebih ketat dan user-friendly
 - **Tracking Pesanan**: Melihat status pesanan real-time
-- **Invoice Digital**: Generate invoice otomatis
+- **Invoice Digital**: Generate invoice otomatis dengan nomor invoice unik
 - **Riwayat Pesanan**: Melihat semua pesanan yang pernah dibuat
 
 ### 🔧 Untuk Admin
@@ -34,7 +71,11 @@ Sistem pemesanan plakat online yang dibangun dengan Laravel 11 dan Filament 3. A
 - **Manajemen Produk**: CRUD plakat dengan upload gambar
 - **Manajemen Pesanan**: Kelola status pesanan dengan filter tabs
 - **Manajemen User**: Kelola pengguna dan role
-- **Verifikasi Pembayaran**: Approve/reject bukti pembayaran
+- **Verifikasi Pembayaran**: Approve/reject bukti pembayaran dengan modal
+- **Real-time Updates**: Auto-refresh setiap 5 detik untuk monitoring pesanan
+- **Payment Proof Viewer**: Modal untuk melihat bukti pembayaran
+- **Admin Notes**: Catatan admin untuk setiap transaksi
+- **Navigation Badges**: Badge notifikasi untuk pesanan pending
 - **Laporan Penjualan**: Export laporan dalam berbagai format
 - **Notifikasi Real-time**: Alert untuk pesanan baru
 
@@ -234,11 +275,12 @@ POST /logout               # Logout
 
 ### Payment Routes
 ```
-GET  /pembayaran/{id}      # Payment form
-POST /payment/process      # Process payment
-GET  /payment/upload/{id}  # Upload proof form
-POST /payment/upload/{id}  # Upload proof process
-GET  /payment/success/{id} # Payment success page
+GET  /pembayaran/{id}           # Payment form
+POST /payment/process           # Process payment
+GET  /payment/upload/{id}       # Upload proof form
+POST /payment/upload/{id}       # Upload proof process
+GET  /payment/success/{id}      # Payment success page
+GET  /api/payment/status/{id}   # Get payment status (AJAX)
 ```
 
 ### User Dashboard Routes (Auth Required)
@@ -274,10 +316,11 @@ GET  /admin/users          # Manage users
 - **Filter**: Filter berdasarkan kategori dan status
 
 #### 📦 Manajemen Transaksi
-- **Filter Tabs**: 
-  - Semua Transaksi
-  - Menunggu Pembayaran
-  - Dibayar
+- **Real-time Polling**: Auto-refresh setiap 5 detik untuk monitoring real-time
+- **Filter Tabs dengan Badge**: 
+  - Semua Transaksi (dengan total count)
+  - Menunggu Pembayaran (dengan warning badge)
+  - Dibayar (dengan success badge)
 - **Advanced Filters**:
   - Status pembayaran
   - Metode pembayaran
@@ -285,10 +328,14 @@ GET  /admin/users          # Manage users
   - Range harga
   - Range tanggal
   - Status bukti pembayaran
-- **Actions**:
-  - Edit status pesanan
-  - View detail pesanan
-  - Download invoice
+- **Enhanced Actions**:
+  - **View Detail**: Modal detail pesanan lengkap
+  - **View Payment Proof**: Modal untuk melihat bukti pembayaran
+  - **Approve Payment**: Terima pembayaran dengan konfirmasi
+  - **Reject Payment**: Tolak pembayaran dengan alasan
+  - **Edit**: Edit detail pesanan
+  - **Admin Notes**: Catatan otomatis untuk setiap aksi admin
+- **Navigation Badge**: Badge notifikasi untuk pesanan pending dengan tooltip
 
 #### 👥 Manajemen User
 - **Filter Tabs**:

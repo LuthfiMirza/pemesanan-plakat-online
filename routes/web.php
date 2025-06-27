@@ -39,6 +39,7 @@ Route::post('/payment/process', [PaymentController::class, 'processPayment'])->n
 Route::get('/payment/upload/{transaction_id}', [PaymentController::class, 'showUploadForm'])->name('payment.upload');
 Route::post('/payment/upload/{transaction_id}', [PaymentController::class, 'uploadProof'])->name('payment.upload.post');
 Route::get('/payment/success/{transaction_id}', [PaymentController::class, 'paymentSuccess'])->name('payment.success');
+Route::get('/api/payment/status/{transaction_id}', [PaymentController::class, 'getPaymentStatus'])->name('payment.status.api');
 
 // Legacy payment routes (for backward compatibility)
 Route::post('/payment', [PaymentController::class, 'store'])->name('payment.store');

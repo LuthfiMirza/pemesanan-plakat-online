@@ -78,31 +78,84 @@ class PaymentController extends Controller
 
     public function uploadProof(Request $request, $transaction_id)
     {
-        $transaction = Transaction::findOrFail($transaction_id);
+        try {
+            $transaction = Transaction::findOrFail($transaction_id);
 
-        $request->validate([
-            'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
+            // Debug: Log request data
+            \Log::info('Upload Proof Request', [
+                'transaction_id' => $transaction_id,
+                'has_file' => $request->hasFile('bukti_pembayaran'),
+                'files' => $request->allFiles(),
+                'all_data' => $request->all()
+            ]);
 
-        // Upload bukti pembayaran
-        if ($request->hasFile('bukti_pembayaran')) {
+            // Validate the request
+            $validatedData = $request->validate([
+                'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            ], [
+                'bukti_pembayaran.required' => 'File bukti pembayaran wajib diupload.',
+                'bukti_pembayaran.image' => 'File harus berupa gambar.',
+                'bukti_pembayaran.mimes' => 'Format file harus JPG, PNG, atau JPEG.',
+                'bukti_pembayaran.max' => 'Ukuran file maksimal 2MB.',
+            ]);
+
+            // Check if file is actually uploaded
+            if (!$request->hasFile('bukti_pembayaran')) {
+                \Log::error('No file uploaded', ['request_files' => $request->allFiles()]);
+                return back()->withErrors(['bukti_pembayaran' => 'File bukti pembayaran tidak ditemukan.'])->withInput();
+            }
+
             $buktiFile = $request->file('bukti_pembayaran');
-            $buktiFileName = time() . '_' . $buktiFile->getClientOriginalName();
-            $buktiFile->storeAs('bukti-pembayaran', $buktiFileName, 'public');
             
+            // Additional validation
+            if (!$buktiFile->isValid()) {
+                \Log::error('Invalid file uploaded', ['file_error' => $buktiFile->getError()]);
+                return back()->withErrors(['bukti_pembayaran' => 'File yang diupload tidak valid.'])->withInput();
+            }
+
+            // Generate unique filename
+            $buktiFileName = time() . '_' . uniqid() . '.' . $buktiFile->getClientOriginalExtension();
+            
+            // Store the file
+            $path = $buktiFile->storeAs('bukti-pembayaran', $buktiFileName, 'public');
+            
+            if (!$path) {
+                \Log::error('Failed to store file', ['filename' => $buktiFileName]);
+                return back()->withErrors(['bukti_pembayaran' => 'Gagal menyimpan file. Silakan coba lagi.'])->withInput();
+            }
+            
+            // Update transaction
             $transaction->bukti_pembayaran = $buktiFileName;
             $transaction->status_pembayaran = 'menunggu_verifikasi';
             $transaction->save();
-        }
 
-        return redirect()->route('payment.success', $transaction->id)
-            ->with('success', 'Bukti pembayaran berhasil diupload. Pesanan Anda sedang diverifikasi.');
+            \Log::info('File uploaded successfully', ['filename' => $buktiFileName, 'transaction_id' => $transaction_id]);
+
+            return redirect()->route('payment.success', $transaction->id)
+                ->with('success', 'Bukti pembayaran berhasil diupload. Pesanan Anda sedang diverifikasi.');
+                
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed', ['errors' => $e->errors()]);
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Upload error', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return back()->withErrors(['error' => 'Terjadi kesalahan saat mengupload file: ' . $e->getMessage()])->withInput();
+        }
     }
 
     public function paymentSuccess($transaction_id)
     {
         $transaction = Transaction::with('plakat')->findOrFail($transaction_id);
         return view('payment.success', compact('transaction'));
+    }
+
+    public function getPaymentStatus($transaction_id)
+    {
+        $transaction = Transaction::findOrFail($transaction_id);
+        return response()->json([
+            'status' => $transaction->status_pembayaran,
+            'updated_at' => $transaction->updated_at->format('Y-m-d H:i:s')
+        ]);
     }
 
     public function checkout(Request $request)

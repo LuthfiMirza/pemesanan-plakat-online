@@ -179,6 +179,7 @@ class TransactionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->poll('5s')
             ->columns([
                 Tables\Columns\TextColumn::make('plakat.nama')
                     ->searchable()
@@ -332,12 +333,79 @@ class TransactionResource extends Resource
                     ->native(false),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->label('Lihat Detail')
+                    ->icon('heroicon-o-eye')
+                    ->color('info'),
+                    
+                Action::make('view_payment_proof')
+                    ->label('Lihat Bukti')
+                    ->icon('heroicon-o-photo')
+                    ->color('primary')
+                    ->visible(fn ($record) => $record->bukti_pembayaran)
+                    ->modalHeading('Bukti Pembayaran')
+                    ->modalContent(function ($record) {
+                        return view('filament.modals.payment-proof', ['record' => $record]);
+                    })
+                    ->modalWidth(MaxWidth::Large),
+                    
+                Action::make('approve_payment')
+                    ->label('Terima Pembayaran')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->status_pembayaran === 'menunggu_verifikasi')
+                    ->requiresConfirmation()
+                    ->modalHeading('Konfirmasi Pembayaran')
+                    ->modalDescription('Apakah Anda yakin ingin menerima pembayaran ini? Pesanan akan diproses.')
+                    ->modalSubmitActionLabel('Ya, Terima Pembayaran')
+                    ->action(function ($record) {
+                        $record->update([
+                            'status_pembayaran' => 'dibayar',
+                            'admin_notes' => ($record->admin_notes ?? '') . "\n[" . now()->format('d/m/Y H:i') . "] Pembayaran diterima oleh admin."
+                        ]);
+                        
+                        Notification::make()
+                            ->title('Pembayaran Diterima')
+                            ->body('Pembayaran untuk pesanan ' . $record->invoice_number . ' telah diterima.')
+                            ->success()
+                            ->send();
+                    }),
+                    
+                Action::make('reject_payment')
+                    ->label('Tolak Pembayaran')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn ($record) => $record->status_pembayaran === 'menunggu_verifikasi')
+                    ->form([
+                        Textarea::make('rejection_reason')
+                            ->label('Alasan Penolakan')
+                            ->required()
+                            ->placeholder('Masukkan alasan penolakan pembayaran...')
+                            ->rows(3)
+                    ])
+                    ->modalHeading('Tolak Pembayaran')
+                    ->modalDescription('Berikan alasan penolakan pembayaran ini.')
+                    ->modalSubmitActionLabel('Ya, Tolak Pembayaran')
+                    ->action(function ($record, array $data) {
+                        $record->update([
+                            'status_pembayaran' => 'ditolak',
+                            'admin_notes' => ($record->admin_notes ?? '') . "\n[" . now()->format('d/m/Y H:i') . "] Pembayaran ditolak: " . $data['rejection_reason']
+                        ]);
+                        
+                        Notification::make()
+                            ->title('Pembayaran Ditolak')
+                            ->body('Pembayaran untuk pesanan ' . $record->invoice_number . ' telah ditolak.')
+                            ->warning()
+                            ->send();
+                    }),
+                    
+                Tables\Actions\EditAction::make()
+                    ->label('Edit')
+                    ->icon('heroicon-o-pencil-square'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Bulk actions removed for security
                 ]),
             ]);
     }
@@ -354,12 +422,19 @@ class TransactionResource extends Resource
         return [
             'index' => Pages\ListTransactions::route('/'),
             'create' => Pages\CreateTransaction::route('/create'),
+            'view' => Pages\ViewTransaction::route('/{record}'),
             'edit' => Pages\EditTransaction::route('/{record}/edit'),
         ];
     }
 
     public static function getNavigationBadge(): ?string
     {
+        $pendingCount = static::getModel()::where('status_pembayaran', 'menunggu_verifikasi')->count();
+        
+        if ($pendingCount > 0) {
+            return (string) $pendingCount;
+        }
+        
         return static::getModel()::count();
     }
 
@@ -372,6 +447,18 @@ class TransactionResource extends Resource
         }
         
         return 'primary';
+    }
+    
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        $pendingCount = static::getModel()::where('status_pembayaran', 'menunggu_verifikasi')->count();
+        $totalCount = static::getModel()::count();
+        
+        if ($pendingCount > 0) {
+            return "{$pendingCount} transaksi menunggu verifikasi dari {$totalCount} total transaksi";
+        }
+        
+        return "{$totalCount} total transaksi";
     }
 
     }

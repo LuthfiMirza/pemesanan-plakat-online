@@ -44,7 +44,7 @@ class PlakatResource extends Resource
                 ->required()
                 ->image()
                 ->disk('public')
-                ->directory('plakats')
+                ->directory('plakat-images')
                 ->label('Gambar Plakat'),
 
             TextInput::make('kategori')
@@ -69,7 +69,11 @@ class PlakatResource extends Resource
                     ->sortable(),
                 Tables\Columns\ImageColumn::make('gambar')
                     ->disk('public')
-                    ->height(50),
+                    ->height(50)
+                    ->width(50)
+                    ->square()
+                    ->checkFileExistence(false)
+                    ->defaultImageUrl(asset('images/placeholder.png')),
                 Tables\Columns\TextColumn::make('kategori')
                     ->searchable(),
                 Tables\Columns\IconColumn::make('status')
