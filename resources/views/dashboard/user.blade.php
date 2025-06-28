@@ -98,17 +98,17 @@
                     <div class="col-md-4">
                         <div class="card border shadow-sm h-100">
                             <div class="card-body p-4 text-center">
-                                <i class="fas fa-clock fa-2x text-muted mb-3"></i>
-                                <h4 class="fw-bold text-dark mb-1">{{ $transactions->whereIn('status_pembayaran', ['pending', 'menunggu_verifikasi', 'menunggu_pembayaran'])->count() }}</h4>
-                                <p class="text-muted mb-0 small">Pesanan Pending</p>
+                                <i class="fas fa-cog fa-2x text-primary mb-3"></i>
+                                <h4 class="fw-bold text-dark mb-1">{{ $transactions->whereIn('status_pembayaran', ['menunggu_pembayaran', 'menunggu_verifikasi', 'dibayar', 'diproses'])->count() }}</h4>
+                                <p class="text-muted mb-0 small">Sedang Diproses</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="card border shadow-sm h-100">
                             <div class="card-body p-4 text-center">
-                                <i class="fas fa-check-circle fa-2x text-muted mb-3"></i>
-                                <h4 class="fw-bold text-dark mb-1">{{ $transactions->where('status_pembayaran', 'confirmed')->count() }}</h4>
+                                <i class="fas fa-check-circle fa-2x text-success mb-3"></i>
+                                <h4 class="fw-bold text-dark mb-1">{{ $transactions->where('status_pembayaran', 'selesai')->count() }}</h4>
                                 <p class="text-muted mb-0 small">Pesanan Selesai</p>
                             </div>
                         </div>
@@ -144,21 +144,38 @@
                                             <td class="py-3 fw-semibold">Rp {{ number_format($transaction->total_harga, 0, ',', '.') }}</td>
                                             <td class="py-3">
                                                 @switch($transaction->status_pembayaran)
-                                                    @case('pending')
-                                                        <span class="badge bg-secondary">Pending</span>
-                                                        @break
                                                     @case('menunggu_pembayaran')
-                                                        <span class="badge bg-secondary">Menunggu Pembayaran</span>
+                                                        <span class="badge bg-warning text-dark">
+                                                            <i class="fas fa-clock me-1"></i>Menunggu Pembayaran
+                                                        </span>
                                                         @break
                                                     @case('menunggu_verifikasi')
-                                                        <span class="badge bg-secondary">Menunggu Verifikasi</span>
+                                                        <span class="badge bg-info text-dark">
+                                                            <i class="fas fa-search me-1"></i>Menunggu Verifikasi
+                                                        </span>
                                                         @break
-                                                    @case('confirmed')
-                                                        <span class="badge bg-dark">Dikonfirmasi</span>
+                                                    @case('dibayar')
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check-circle me-1"></i>Dibayar
+                                                        </span>
                                                         @break
-                                                    @case('rejected')
-                                                        <span class="badge bg-secondary">Ditolak</span>
+                                                    @case('diproses')
+                                                        <span class="badge bg-primary">
+                                                            <i class="fas fa-cog me-1"></i>Di Proses
+                                                        </span>
                                                         @break
+                                                    @case('selesai')
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check-badge me-1"></i>Selesai
+                                                        </span>
+                                                        @break
+                                                    @case('ditolak')
+                                                        <span class="badge bg-danger">
+                                                            <i class="fas fa-times-circle me-1"></i>Ditolak
+                                                        </span>
+                                                        @break
+                                                    @default
+                                                        <span class="badge bg-secondary">{{ ucfirst($transaction->status_pembayaran) }}</span>
                                                 @endswitch
                                             </td>
                                             <td class="py-3 text-muted">{{ $transaction->created_at->format('d/m/Y') }}</td>

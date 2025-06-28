@@ -161,6 +161,8 @@ class TransactionResource extends Resource
                                 'menunggu_pembayaran' => 'Menunggu Pembayaran',
                                 'menunggu_verifikasi' => 'Menunggu Verifikasi',
                                 'dibayar' => 'Dibayar',
+                                'diproses' => 'Di Proses',
+                                'selesai' => 'Selesai',
                                 'ditolak' => 'Ditolak'
                             ])
                             ->required()
@@ -239,6 +241,8 @@ class TransactionResource extends Resource
                         'menunggu_pembayaran' => 'warning',
                         'menunggu_verifikasi' => 'info',
                         'dibayar' => 'success',
+                        'diproses' => 'primary',
+                        'selesai' => 'success',
                         'ditolak' => 'danger',
                         default => 'gray',
                     }),
@@ -254,6 +258,8 @@ class TransactionResource extends Resource
                         'menunggu_pembayaran' => 'Menunggu Pembayaran',
                         'menunggu_verifikasi' => 'Menunggu Verifikasi',
                         'dibayar' => 'Dibayar',
+                        'diproses' => 'Di Proses',
+                        'selesai' => 'Selesai',
                         'ditolak' => 'Ditolak',
                     ])
                     ->native(false),
@@ -399,6 +405,59 @@ class TransactionResource extends Resource
                             ->send();
                     }),
                     
+                Action::make('start_processing')
+                    ->label('Mulai Proses')
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->color('primary')
+                    ->visible(fn ($record) => $record->status_pembayaran === 'dibayar')
+                    ->requiresConfirmation()
+                    ->modalHeading('Mulai Proses Pesanan')
+                    ->modalDescription('Apakah Anda yakin ingin memulai proses pembuatan pesanan ini?')
+                    ->modalSubmitActionLabel('Ya, Mulai Proses')
+                    ->action(function ($record) {
+                        $record->update([
+                            'status_pembayaran' => 'diproses',
+                            'admin_notes' => ($record->admin_notes ?? '') . "\n[" . now()->format('d/m/Y H:i') . "] Pesanan mulai diproses oleh admin."
+                        ]);
+                        
+                        Notification::make()
+                            ->title('Pesanan Diproses')
+                            ->body('Pesanan ' . $record->invoice_number . ' sedang diproses.')
+                            ->success()
+                            ->send();
+                    }),
+                    
+                Action::make('complete_order')
+                    ->label('Selesaikan Pesanan')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->status_pembayaran === 'diproses')
+                    ->form([
+                        Textarea::make('completion_notes')
+                            ->label('Catatan Penyelesaian')
+                            ->placeholder('Tambahkan catatan penyelesaian pesanan (opsional)...')
+                            ->rows(3)
+                    ])
+                    ->modalHeading('Selesaikan Pesanan')
+                    ->modalDescription('Tandai pesanan ini sebagai selesai.')
+                    ->modalSubmitActionLabel('Ya, Selesaikan Pesanan')
+                    ->action(function ($record, array $data) {
+                        $completionNote = !empty($data['completion_notes']) 
+                            ? ": " . $data['completion_notes']
+                            : ".";
+                            
+                        $record->update([
+                            'status_pembayaran' => 'selesai',
+                            'admin_notes' => ($record->admin_notes ?? '') . "\n[" . now()->format('d/m/Y H:i') . "] Pesanan selesai" . $completionNote
+                        ]);
+                        
+                        Notification::make()
+                            ->title('Pesanan Selesai')
+                            ->body('Pesanan ' . $record->invoice_number . ' telah selesai.')
+                            ->success()
+                            ->send();
+                    }),
+                    
                 Tables\Actions\EditAction::make()
                     ->label('Edit')
                     ->icon('heroicon-o-pencil-square'),
@@ -429,7 +488,7 @@ class TransactionResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $pendingCount = static::getModel()::where('status_pembayaran', 'menunggu_verifikasi')->count();
+        $pendingCount = static::getModel()::whereIn('status_pembayaran', ['menunggu_verifikasi', 'dibayar'])->count();
         
         if ($pendingCount > 0) {
             return (string) $pendingCount;
@@ -440,7 +499,7 @@ class TransactionResource extends Resource
 
     public static function getNavigationBadgeColor(): string|array|null
     {
-        $pendingCount = static::getModel()::where('status_pembayaran', 'menunggu_verifikasi')->count();
+        $pendingCount = static::getModel()::whereIn('status_pembayaran', ['menunggu_verifikasi', 'dibayar'])->count();
         
         if ($pendingCount > 0) {
             return 'warning';
@@ -451,11 +510,20 @@ class TransactionResource extends Resource
     
     public static function getNavigationBadgeTooltip(): ?string
     {
-        $pendingCount = static::getModel()::where('status_pembayaran', 'menunggu_verifikasi')->count();
+        $verifikasiCount = static::getModel()::where('status_pembayaran', 'menunggu_verifikasi')->count();
+        $dibayarCount = static::getModel()::where('status_pembayaran', 'dibayar')->count();
         $totalCount = static::getModel()::count();
         
-        if ($pendingCount > 0) {
-            return "{$pendingCount} transaksi menunggu verifikasi dari {$totalCount} total transaksi";
+        $pendingActions = [];
+        if ($verifikasiCount > 0) {
+            $pendingActions[] = "{$verifikasiCount} menunggu verifikasi";
+        }
+        if ($dibayarCount > 0) {
+            $pendingActions[] = "{$dibayarCount} siap diproses";
+        }
+        
+        if (!empty($pendingActions)) {
+            return implode(', ', $pendingActions) . " dari {$totalCount} total transaksi";
         }
         
         return "{$totalCount} total transaksi";

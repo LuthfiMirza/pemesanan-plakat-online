@@ -103,21 +103,38 @@
                                             <div class="small text-muted mt-1">{{ $transaction->created_at->format('d/m/Y H:i') }}</div>
                                         </div>
                                         @switch($transaction->status_pembayaran)
-                                            @case('pending')
-                                                <span class="badge bg-secondary">Pending</span>
-                                                @break
                                             @case('menunggu_pembayaran')
-                                                <span class="badge bg-secondary">Menunggu Pembayaran</span>
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="fas fa-clock me-1"></i>Menunggu Pembayaran
+                                                </span>
                                                 @break
                                             @case('menunggu_verifikasi')
-                                                <span class="badge bg-secondary">Menunggu Verifikasi</span>
+                                                <span class="badge bg-info text-dark">
+                                                    <i class="fas fa-search me-1"></i>Menunggu Verifikasi
+                                                </span>
                                                 @break
-                                            @case('confirmed')
-                                                <span class="badge bg-dark">Dikonfirmasi</span>
+                                            @case('dibayar')
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle me-1"></i>Dibayar
+                                                </span>
                                                 @break
-                                            @case('rejected')
-                                                <span class="badge bg-secondary">Ditolak</span>
+                                            @case('diproses')
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-cog me-1"></i>Di Proses
+                                                </span>
                                                 @break
+                                            @case('selesai')
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-badge me-1"></i>Selesai
+                                                </span>
+                                                @break
+                                            @case('ditolak')
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times-circle me-1"></i>Ditolak
+                                                </span>
+                                                @break
+                                            @default
+                                                <span class="badge bg-secondary">{{ ucfirst($transaction->status_pembayaran) }}</span>
                                         @endswitch
                                     </div>
                                     
@@ -178,21 +195,38 @@
                                                 </td>
                                                 <td class="py-3">
                                                     @switch($transaction->status_pembayaran)
-                                                        @case('pending')
-                                                            <span class="badge bg-secondary">Pending</span>
-                                                            @break
                                                         @case('menunggu_pembayaran')
-                                                            <span class="badge bg-secondary">Menunggu Pembayaran</span>
+                                                            <span class="badge bg-warning text-dark">
+                                                                <i class="fas fa-clock me-1"></i>Menunggu Pembayaran
+                                                            </span>
                                                             @break
                                                         @case('menunggu_verifikasi')
-                                                            <span class="badge bg-secondary">Menunggu Verifikasi</span>
+                                                            <span class="badge bg-info text-dark">
+                                                                <i class="fas fa-search me-1"></i>Menunggu Verifikasi
+                                                            </span>
                                                             @break
-                                                        @case('confirmed')
-                                                            <span class="badge bg-dark">Dikonfirmasi</span>
+                                                        @case('dibayar')
+                                                            <span class="badge bg-success">
+                                                                <i class="fas fa-check-circle me-1"></i>Dibayar
+                                                            </span>
                                                             @break
-                                                        @case('rejected')
-                                                            <span class="badge bg-secondary">Ditolak</span>
+                                                        @case('diproses')
+                                                            <span class="badge bg-primary">
+                                                                <i class="fas fa-cog me-1"></i>Di Proses
+                                                            </span>
                                                             @break
+                                                        @case('selesai')
+                                                            <span class="badge bg-success">
+                                                                <i class="fas fa-check-badge me-1"></i>Selesai
+                                                            </span>
+                                                            @break
+                                                        @case('ditolak')
+                                                            <span class="badge bg-danger">
+                                                                <i class="fas fa-times-circle me-1"></i>Ditolak
+                                                            </span>
+                                                            @break
+                                                        @default
+                                                            <span class="badge bg-secondary">{{ ucfirst($transaction->status_pembayaran) }}</span>
                                                     @endswitch
                                                 </td>
                                                 <td class="py-3 text-muted">{{ $transaction->created_at->format('d/m/Y') }}</td>

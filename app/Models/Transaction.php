@@ -27,7 +27,8 @@ class Transaction extends Model
         'ewallet',
         'bukti_pembayaran',
         'status_pembayaran',
-        'invoice_number'
+        'invoice_number',
+        'admin_notes'
     ];
 
     protected $appends = ['design_file_url', 'bukti_pembayaran_url'];
